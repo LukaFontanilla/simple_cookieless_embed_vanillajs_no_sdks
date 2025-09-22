@@ -49,6 +49,8 @@ Before running the application, you need to configure your Looker API credential
 
 3.  **(Optional) Modify `user.json`**: This file defines the properties of the embed user, such as permissions and user attributes. You can modify this file to change the embed user's settings.
 
+4. Add the `http://localhost:8000` url to your Looker instance's Admin -> Embed -> Embed Domain Allowlist, to enable Cookieless Embed for that host.
+
 ## Running the Application
 
 Once the project is configured, you can start the server by running:
