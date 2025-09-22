@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Looker Embed Dashboard</title>
+   <style>
+       body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+       .container { max-width: 1000px; width: 100%; text-align: center; }
+       #dashboard-iframe { width: 100%; height: 80vh; border: 1px solid #ccc; margin-top: 20px; }
+       #fetch-button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+   </style>
+</head>
+<body>
+   <div class="container">
+       <h1>Looker Dashboard Embed</h1>
+       <iframe id="dashboard-iframe" title="Looker Dashboard" style="display: none;"></iframe>
+   </div>
+
+
+   <script>
+       const lookerBaseUrl = '{{LOOKER_BASE_URL}}';
+       const dashboardId = '{{DASHBOARD_ID}}';
+       const iframe = document.getElementById('dashboard-iframe');
+
+       const generateEmbedTokens = async (source, origin) => {
+         const response = await fetch("/api/generate-embed-tokens", {
+           method: "POST",
+         });
+         const data = await response.json();
+         source.postMessage(
+           JSON.stringify({
+             type: "session:tokens",
+             ...data,
+           }),
+           origin
+         );
+       };
+
+       const acquireEmbedTokens = async () => {
+         const response = await fetch("/api/acquire-embed-session", {
+           method: "POST",
+         });
+         const data = await response.json();
+         const path = `/embed/dashboards/${dashboardId}`;
+         const query_params = {
+           embed_domain: location.origin,
+           embed_navigation_token: data.navigation_token,
+         };
+         const encoded_path = encodeURIComponent(
+           path +
+             "?" +
+             Object.entries(query_params)
+               .map(([key, value]) => `${key}=${value}`)
+               .join("&")
+         );
+
+         const iframe_url = new URL(
+           `${lookerBaseUrl}/login/embed/${encoded_path}`
+         );
+         iframe_url.searchParams.set(
+           "embed_authentication_token",
+           data.authentication_token
+         );
+         iframe.src = iframe_url.toString();
+         iframe.style.display = 'block';
+       };
+
+      window.addEventListener("message", (event) => {
+        let data = {};
+        try {
+          data = JSON.parse(event.data);
+        } catch (e) {
+          // console.log("could not parse event in client", e);
+        }
+        if (data.type === "session:tokens:request") {
+          console.log(event)
+          generateEmbedTokens(event.source, event.origin);
+        }
+      });
+
+       acquireEmbedTokens();
+   </script>
+</body>
+</html>
