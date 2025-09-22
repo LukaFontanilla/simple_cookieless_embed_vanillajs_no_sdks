@@ -18,7 +18,11 @@ app.use(express.json())
 let looker_tokens = {};
 //
 
-// Login to Looker API
+/**
+ * Authenticates with the Looker API to get an admin access token.
+ * Uses the LOOKER_CLIENT_ID and LOOKER_CLIENT_SECRET from the environment variables.
+ * @returns {Promise<object>} A promise that resolves to the admin access token object.
+ */
 const getAdminToken = async () => {
   const query = new URLSearchParams({
     client_id: process.env.LOOKER_CLIENT_ID,
@@ -39,6 +43,11 @@ const getAdminToken = async () => {
 }
 //
 
+/**
+ * Route to acquire a new cookieless embed session.
+ * This endpoint authenticates as an admin, then creates a new embed session
+ * for the user defined in `user.json`.
+ */
 app.post('/api/acquire-embed-session', async (req, res) => {
   try {
     const admin_token = await getAdminToken();
@@ -72,6 +81,10 @@ app.post('/api/acquire-embed-session', async (req, res) => {
   }
 })
 
+/**
+ * Route to generate new tokens for an existing cookieless embed session.
+ * This is called by the frontend when the Looker iframe requests a token refresh.
+ */
 app.post('/api/generate-embed-tokens', async (req, res) => {
   try {
     const admin_token = await getAdminToken();
@@ -100,6 +113,11 @@ app.post('/api/generate-embed-tokens', async (req, res) => {
   }
 })
 
+/**
+ * Route to serve the main HTML page.
+ * This reads the `embed.html` file, replaces the placeholder values for
+ * LOOKER_BASE_URL and LOOKER_DASHBOARD_ID, and serves the result.
+ */
 app.get('/', (req, res) => {
   fs.readFile(path.resolve('embed.html'), 'utf8', (err, data) => {
     if (err) {
