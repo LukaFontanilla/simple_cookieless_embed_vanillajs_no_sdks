@@ -1,0 +1,71 @@
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: "Open Sans", sans-serif;
+  overflow: hidden; /* Prevents scrollbars on the body */
+  line-height: 1.4rem;
+}
+
+#app-container {
+  display: flex;
+  height: 100vh;
+  background-color: transparent;
+}
+
+#banner {
+  width: 250px;
+  padding: 20px;
+  border-right: 1px solid #ddd;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  position: relative;
+  transition: width 0.3s;
+  /* background-color: #f8f9fa; */
+  flex-shrink: 0; /* Prevent banner from shrinking */
+}
+
+#banner.collapsed {
+  width: 10px;
+  padding: 0;
+  /* overflow: hidden;
+  border-right: none;
+  box-shadow: none; */
+}
+
+#banner-content {
+  display: block;
+}
+
+#banner.collapsed #banner-content {
+  display: none;
+}
+
+#collapse-button {
+  position: absolute;
+  top: 50%;
+  right: -15px;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
+}
+
+#iframe-container {
+  flex-grow: 1;
+}
+
+#dashboard-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block; /* Ensure iframe is visible */
+}

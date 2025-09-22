@@ -12,6 +12,7 @@ dotenv.config()
 const app = express()
 app.use(cors())
 app.use(express.json())
+app.use(express.static('public'))
 //
 
 // Simple in-memory object for managing session tokens
@@ -119,7 +120,7 @@ app.post('/api/generate-embed-tokens', async (req, res) => {
  * LOOKER_BASE_URL and LOOKER_DASHBOARD_ID, and serves the result.
  */
 app.get('/', (req, res) => {
-  fs.readFile(path.resolve('embed.html'), 'utf8', (err, data) => {
+  fs.readFile(path.resolve('public', 'embed.html'), 'utf8', (err, data) => {
     if (err) {
       console.error(err);
       return res.status(500).send('An error occurred');

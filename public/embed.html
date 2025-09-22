@@ -4,25 +4,47 @@
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <title>Looker Embed Dashboard</title>
-   <style>
-       body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
-       .container { max-width: 1000px; width: 100%; text-align: center; }
-       #dashboard-iframe { width: 100%; height: 80vh; border: 1px solid #ccc; margin-top: 20px; }
-       #fetch-button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
-   </style>
+   <link rel="stylesheet" href="styles.css">
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
 </head>
 <body>
-   <div class="container">
-       <h1>Looker Dashboard Embed</h1>
-       <iframe id="dashboard-iframe" title="Looker Dashboard" style="display: none;"></iframe>
-   </div>
-
+  <div id="app-container">
+    <div id="banner">
+      <div id="banner-content">
+        <h1>Looker Embed</h1>
+        <p>Welcome! This is an <i>ultra</i> minimal example of a <strong style="color: purple;">Looker</strong> cookieless embed session. <br/>
+           This example <strong>doesn't</strong> use any Frontend or Backend SDK of <strong style="color: purple;">Looker</strong> and is implemented in <span style="text-decoration:2px green underline;">VanillaJS</span>.
+        </p>
+      </div>
+      <button id="collapse-button">&laquo;</button>
+    </div>
+    <div id="iframe-container">
+      <iframe id="dashboard-iframe" title="Looker Dashboard"></iframe>
+    </div>
+  </div>
 
    <script>
-       // These values are replaced by the backend server when the page is rendered.
+       // --- Looker Embed Configuration ---
        const lookerBaseUrl = '{{LOOKER_BASE_URL}}';
        const dashboardId = '{{DASHBOARD_ID}}';
        const iframe = document.getElementById('dashboard-iframe');
+
+       // --- Collapse/Expand Banner Logic ---
+       const banner = document.getElementById('banner');
+       const collapseButton = document.getElementById('collapse-button');
+
+       collapseButton.addEventListener('click', () => {
+         banner.classList.toggle('collapsed');
+         if (banner.classList.contains('collapsed')) {
+           collapseButton.innerHTML = '&raquo;';
+         } else {
+           collapseButton.innerHTML = '&laquo;';
+         }
+       });
+
+       // --- Looker Cookieless Embed Functions ---
 
        /**
         * This function is called when the Looker iframe requests a token refresh.
@@ -67,7 +89,7 @@
          // The navigation_token is used by Looker to allow the user to navigate
          // within the embedded content.
          const query_params = {
-           embed_domain: location.origin, // The domain of this page, for security you will need to add this to the Looker Embed Domain allowlist for cookieless to work.
+           embed_domain: location.origin, // The domain of this page, for security this url needs to be in the Looker Embed Domain Allowlist for Cookieless to work.
            embed_navigation_token: data.navigation_token,
          };
 
@@ -96,7 +118,6 @@
 
          // Set the iframe source to the constructed URL to load the Looker content.
          iframe.src = iframe_url.toString();
-         iframe.style.display = 'block';
        };
 
       /**
@@ -113,6 +134,7 @@
 
         // When the Looker iframe needs new tokens, it will send a 'session:tokens:request' message.
         if (data.type === "session:tokens:request") {
+          console.log("Cookieless token request: ", data)
           // Call our function to get new tokens and send them back to the iframe.
           generateEmbedTokens(event.source, event.origin);
         }
