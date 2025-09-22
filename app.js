@@ -3,6 +3,9 @@ import path from 'path'
 import cors from 'cors'
 import fs from 'fs'
 import user from './user.json' assert { type: 'json' }
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 
 // Express App setup
@@ -85,7 +88,7 @@ app.post('/api/generate-embed-tokens', async (req, res) => {
           Authorization: `Bearer ${admin_token.access_token}`,
           "User-Agent": req.headers['user-agent'],
         },
-        body: JSON.stringify({ ...gbl_tokens }),
+        body: JSON.stringify({ ...looker_tokens }),
       }
     ).then((response) => {
       return response.json();
