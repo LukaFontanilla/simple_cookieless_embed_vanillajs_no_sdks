@@ -73,6 +73,12 @@ body, html {
   opacity: 0;
   transition: opacity 0.5s linear;
   z-index: 1;
+  display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+    padding: 2rem 0;
+    overflow-y: auto;
 }
 
 #iframe-container.loaded {
@@ -80,11 +86,12 @@ body, html {
   z-index: 2; /* Ensure iframe is on top when loaded */
 }
 
-#dashboard-iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
+#iframe-container iframe {
+  width: 20rem;
+  height: 20rem;
+  border: 1px solid #ddd;
   display: block; /* Ensure iframe is visible */
+  flex-shrink: 0;
 }
 
 #looker-loader {

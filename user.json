@@ -2,7 +2,7 @@
   "external_user_id": "6323",
   "first_name": "John",
   "last_name": "Doe",
-  "session_length": 3600,
+  "session_length": 20,
   "force_logout_login": true,
   "permissions": [
     "access_data",

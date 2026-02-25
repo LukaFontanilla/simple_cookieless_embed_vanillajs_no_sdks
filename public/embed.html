@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap"
     rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@looker/embed-sdk@2.0.6/dist/main.min.js"></script>
 </head>
 
 <body>
@@ -29,7 +30,6 @@
     <div id="content-container">
       <img id="looker-loader" src="looker.svg" />
       <div id="iframe-container">
-        <iframe id="dashboard-iframe" title="Looker Dashboard"></iframe>
       </div>
     </div>
   </div>
@@ -37,8 +37,7 @@
   <script>
     // --- Looker Embed Configuration ---
     const lookerBaseUrl = '{{LOOKER_BASE_URL}}';
-    const dashboardId = '{{DASHBOARD_ID}}';
-    const iframe = document.getElementById('dashboard-iframe');
+        const dashboardId = '{{DASHBOARD_ID}}';
 
     // --- Looker Loader ---
     const lookerLoader = document.getElementById('looker-loader');
@@ -57,111 +56,46 @@
       }
     });
 
-    // --- Looker Cookieless Embed Functions ---
+        // --- Looker Embed SDK ---
 
-    /**
-     * This function is called when the Looker iframe requests a token refresh.
-     * It sends a request to our backend to get new tokens and then posts them
-     * back to the iframe.
-     * @param {MessageEventSource} source The window that sent the message.
-     * @param {string} origin The origin of the window that sent the message.
-     */
-    const generateEmbedTokens = async (source, origin) => {
-      // Call the backend endpoint to generate a new set of tokens.
-      const response = await fetch("/api/generate-embed-tokens", {
-        method: "POST",
-      });
-      const data = await response.json();
+        // Initialize the Looker Embed SDK for Cookieless
+        // Note: We strip the protocol from lookerBaseUrl if present
+        const lookerHost = lookerBaseUrl.replace(/^https?:\/\//, '');
 
-      // Send the new tokens back to the Looker iframe.
-      // The iframe is listening for the 'session:tokens' message type.
-      source.postMessage(
-        JSON.stringify({
-          type: "session:tokens",
-          ...data,
-        }),
-        origin
+        LookerEmbedSDK.getEmbedSDK().initCookieless(
+          lookerHost,
+          '/api/acquire-embed-session',
+          '/api/generate-embed-tokens'
       );
-    };
 
-    /**
-     * This function is called on page load to start the cookieless embed process.
-     * It acquires the initial set of tokens and constructs the special embed URL.
-     */
-    const acquireEmbedTokens = async () => {
-      // Call the backend to acquire a new cookieless session and get the initial tokens.
-      const response = await fetch("/api/acquire-embed-session", {
-        method: "POST",
-      });
-      const data = await response.json();
+        const setupDashboard = async () => {
+      try {
+        const createDashboard = async (containerSelector, dId) => {
+          return LookerEmbedSDK.getEmbedSDK().createDashboardWithId(dId)
+            .appendTo(containerSelector)
+            .on('dashboard:run:complete', () => {
+              // Note: This will fire for each dashboard. 
+              // We'll hide the loader once at least one started/finished if needed, 
+              // but for simplicity we'll just let them both run.
+              lookerLoader.classList.add('hide');
+              iframeContainer.classList.add('loaded');
+            })
+            .build()
+            .connect();
+        };
 
-      // The path to the Looker content you want to embed.
-      const path = `/embed/dashboards/${dashboardId}`;
-
-      // Construct the query parameters for the embed URL.
-      // The navigation_token is used by Looker to allow the user to navigate
-      // within the embedded content.
-      const query_params = {
-        embed_domain: location.origin, // The domain of this page, for security this url needs to be in the Looker Embed Domain Allowlist for Cookieless to work.
-        embed_navigation_token: data.navigation_token,
+        // Create two dashboards
+        await Promise.all([
+          createDashboard('#iframe-container', dashboardId),
+          createDashboard('#iframe-container', dashboardId)
+        ]);
+      } catch (error) {
+        console.error('An unexpected error occurred during dashboard setup', error);
+      }
       };
 
-      // The path and query parameters must be URI encoded to be part of the final URL.
-      const encoded_path = encodeURIComponent(
-        path +
-        "?" +
-        Object.entries(query_params)
-          .map(([key, value]) => `${key}=${value}`)
-          .join("&")
-      );
-
-      // Construct the final URL for the iframe.
-      // The key part of the cookieless embed URL is '/login/embed/'.
-      // This tells Looker to start an authentication flow for the embed user.
-      const iframe_url = new URL(
-        `${lookerBaseUrl}/login/embed/${encoded_path}`
-      );
-
-      // The authentication_token is a one-time use token that authenticates the embed user.
-      // It is passed as a query parameter to the /login/embed/ URL.
-      iframe_url.searchParams.set(
-        "embed_authentication_token",
-        data.authentication_token
-      );
-
-      // Set the iframe source to the constructed URL to load the Looker content.
-      iframe.src = iframe_url.toString();
-    };
-
-    /**
-     * This event listener listens for messages from the Looker iframe.
-     * This is the core of the cookieless token refresh mechanism.
-     */
-    window.addEventListener("message", (event) => {
-      let data = {};
-      try {
-        data = JSON.parse(event.data);
-      } catch (e) {
-        // Not a JSON message, ignore.
-      }
-
-      console.log(data)
-
-      if (data.type === "dashboard:run:complete") {
-        lookerLoader.classList.add('hide');
-        iframeContainer.classList.add('loaded');
-      }
-
-      // When the Looker iframe needs new tokens, it will send a 'session:tokens:request' message.
-      if (data.type === "session:tokens:request") {
-        console.log("Cookieless token request: ", data)
-        // Call our function to get new tokens and send them back to the iframe.
-        generateEmbedTokens(event.source, event.origin);
-      }
-    });
-
     // Start the process when the page loads.
-    acquireEmbedTokens();
+        setupDashboard();
   </script>
 </body>
 
