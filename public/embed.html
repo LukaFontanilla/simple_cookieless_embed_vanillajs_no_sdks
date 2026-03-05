@@ -68,31 +68,63 @@
           '/api/generate-embed-tokens'
       );
 
+              let isReloading = false;
+
         const setupDashboard = async () => {
-      try {
-        const createDashboard = async (containerSelector, dId) => {
-          return LookerEmbedSDK.getEmbedSDK().createDashboardWithId(dId)
-            .appendTo(containerSelector)
-            .on('dashboard:run:complete', () => {
-              // Note: This will fire for each dashboard. 
-              // We'll hide the loader once at least one started/finished if needed, 
-              // but for simplicity we'll just let them both run.
-              lookerLoader.classList.add('hide');
-              iframeContainer.classList.add('loaded');
-            })
-            .build()
-            .connect();
+          try {
+            const createDashboard = async (containerSelector, dId) => {
+              return LookerEmbedSDK.getEmbedSDK().createDashboardWithId(dId)
+                .appendTo(containerSelector)
+                .on('dashboard:run:complete', () => {
+          // Note: This will fire for each dashboard. 
+                  lookerLoader.classList.add('hide');
+                  iframeContainer.classList.add('loaded');
+                })
+                // Remount the iframes automatically if the cookieless session drops
+                .on('session:status', (event) => {
+                  if (event && event.expired) {
+                    remountDashboards();
+                  }
+                })
+                .build()
+                .connect();
+            };
+
+            // Create two dashboards
+            await Promise.all([
+              createDashboard('#iframe-container', dashboardId),
+              createDashboard('#iframe-container', dashboardId)
+            ]);
+          } catch (error) {
+            console.error('An unexpected error occurred during dashboard setup', error);
+            isReloading = false;
+          }
         };
 
-        // Create two dashboards
-        await Promise.all([
-          createDashboard('#iframe-container', dashboardId),
-          createDashboard('#iframe-container', dashboardId)
-        ]);
-      } catch (error) {
-        console.error('An unexpected error occurred during dashboard setup', error);
-      }
-      };
+              const remountDashboards = async () => {
+                if (isReloading) return;
+                isReloading = true;
+                console.log("Looker Session Expired. Remounting iframes...");
+
+                // Clear the old IFRAME DOM and reset loaders
+                iframeContainer.innerHTML = '';
+                lookerLoader.classList.remove('hide');
+                iframeContainer.classList.remove('loaded');
+
+                // The Looker Embed SDK maintains an internal state machine singleton.
+                // If we do not explicitly wipe it, the 'sessionCreated' flag will stay true
+                // and break Looker's internal deduplication loop, causing race conditions in /acquire.
+                LookerEmbedSDK.getEmbedSDK().clearSession();
+
+                LookerEmbedSDK.getEmbedSDK().initCookieless(
+                  lookerHost,
+                  '/api/acquire-embed-session',
+                  '/api/generate-embed-tokens'
+                );
+
+                await setupDashboard();
+                isReloading = false;
+              };
 
     // Start the process when the page loads.
         setupDashboard();

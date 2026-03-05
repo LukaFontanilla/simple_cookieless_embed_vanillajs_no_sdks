@@ -12,7 +12,7 @@ Follow these instructions to get the project running on your local machine.
 
 ### Prerequisites
 
-Make sure you have [Node.js](https://nodejs.org/) and [npm](https://www.npmjs.com/) installed on your system.
+Make sure you have [Node.js](https://nodejs.org/) and [npm](https://www.npmjs.com/) installed on your system. Specifically, Node 18+ is required as the code utilizes the native `fetch` API and ES Module imports.
 
 ### Installation
 
@@ -68,3 +68,4 @@ In production there are a few things you'll want to take note of, that this mini
 * We use a static user profile for the Embed User, in production this profile would typically be dynamic and either stored in a database table OR created on the fly given the app user identity.
 * Never expose the `session_reference_token` to the browser, not even in a HTTP Only Cookie. Instead your backend should generate a `session_id` that can be used to fetch the `session_reference_token` and other tokens from the server-side cache.
 * For simplicity, the Looker Admin API Access token is not cached in the sample and instead generated on each request to the cookieless endpoints. We recommend caching this token and it's TTL and syncing that with the parent application's session duration.
+* **Multiple Iframes & Session Remounting**: When building Single Page Applications (SPAs) or workflows that remount multiple iframes after a session expires, you must explicitly call [`LookerEmbedSDK.getEmbedSDK().clearSession()`](/public/embed.html#L117) before calling `initCookieless(...)` again. The Looker Embed SDK operates as a singleton; without clearing it, its internal `_sessionCreated` flag remains `true`, which bypasses its built-in Promise deduplication. This causes concurrent iframe boots to execute redundant, parallel requests to your backend `/acquire-embed-session` endpoint instead of sharing a single session.
